@@ -1,0 +1,55 @@
+{
+  "name": "@zakyyudha/node-authzkit",
+  "version": "1.0.0",
+  "description": "A very simple Node.js authorization library",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "prebuild": "rm -rf dist",
+    "build:web": "cd src/dashboard/web && pnpm install && pnpm build",
+    "build": "pnpm build:web && tsc && copyfiles -u 3 \"src/dashboard/web/dist/**/*\" dist/src/dashboard/web/",
+    "test": "jest --coverage",
+    "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\" \"examples/**/*.ts\"",
+    "start:dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register examples/express-app.ts",
+    "clean": "rm -rf dist node_modules"
+  },
+  "keywords": [
+    "authorization",
+    "permissions",
+    "roles",
+    "node",
+    "typescript"
+  ],
+  "license": "ISC",
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "eslint": "^8.57.0",
+    "@types/basic-auth": "^1.1.8",
+    "@types/jest": "^29.5.12",
+    "@types/mongodb-memory-server": "^2.3.0",
+    "copyfiles": "^2.4.1",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^11.0.1",
+    "pg-mem": "^3.0.8",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.5.3",
+    "prettier": "^3.3.3",
+    "@eslint/js": "^9.39.2",
+    "typescript-eslint": "^8.54.0",
+    "globals": "^17.2.0"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/mongodb": "^4.0.7",
+    "@types/pg": "^8.16.0",
+    "basic-auth": "^2.0.1",
+    "express": "^5.2.1",
+    "mongodb": "^7.0.0",
+    "pg": "^8.17.2"
+  }
+}
