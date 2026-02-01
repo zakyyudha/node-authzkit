@@ -6,8 +6,10 @@ import {
   MongoAuthzkitStore,
   MongoConnection,
   authorize,
+  createDashboardRouter,
   IAuthzkitConfig,
 } from '@zakyyudha/node-authzkit';
+import { Authorizable } from '../src';
 
 async function bootstrap() {
   // 1) Start an in-memory MongoDB server
@@ -39,11 +41,23 @@ async function bootstrap() {
   await authzkit.definePermission('edit_posts');
   await authzkit.defineRole('editor', ['edit_posts']);
 
-  const user = { id: 'user_1' };
+  const user = { id: 'user_1' } as Authorizable;
   await authzkit.assignRole(user, 'editor');
 
   // 5) Express app with authorization middleware
   const app = express();
+
+  // Dashboard (Basic Auth + JWT for API)
+  app.use(
+    '/authzkit',
+    createDashboardRouter({
+      authzkit,
+      secret: 'mysecret',
+      username: 'admin',
+      jwtSecret: 'myjwtsecret',
+      jwtExpiresIn: '1h',
+    })
+  );
 
   app.get('/posts', (req, res) => {
     res.send('Public posts');

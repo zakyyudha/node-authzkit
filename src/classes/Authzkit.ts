@@ -205,6 +205,41 @@ export class Authzkit {
   }
 
   /**
+   * Adds a permission to a role.
+   * @param roleName The name of the role.
+   * @param permissionName The name of the permission.
+   */
+  public async addPermissionToRole(roleName: string, permissionName: string): Promise<Role> {
+    const role = await this.store.getRole(roleName);
+    if (!role) {
+      throw new Error(`Role '${roleName}' not found.`);
+    }
+    if (!(await this.store.hasPermission(permissionName))) {
+      throw new Error(`Permission '${permissionName}' not found.`);
+    }
+    if (!role.permissions.includes(permissionName)) {
+      role.permissions.push(permissionName);
+      await this.store.setRole(role);
+    }
+    return role;
+  }
+
+  /**
+   * Removes a permission from a role.
+   * @param roleName The name of the role.
+   * @param permissionName The name of the permission.
+   */
+  public async removePermissionFromRole(roleName: string, permissionName: string): Promise<Role> {
+    const role = await this.store.getRole(roleName);
+    if (!role) {
+      throw new Error(`Role '${roleName}' not found.`);
+    }
+    role.permissions = role.permissions.filter((p) => p !== permissionName);
+    await this.store.setRole(role);
+    return role;
+  }
+
+  /**
    * Resets all defined permissions, roles, and assigned user roles/permissions.
    * Useful for testing.
    */

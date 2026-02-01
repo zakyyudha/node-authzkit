@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../services/api';
 
 export default function UsersPage() {
@@ -7,10 +7,24 @@ export default function UsersPage() {
     const [loadedUserId, setLoadedUserId] = useState('');
     const [roles, setRoles] = useState<string[]>([]);
     const [permissions, setPermissions] = useState<string[]>([]);
+    const [allRoles, setAllRoles] = useState<string[]>([]);
+    const [allPermissions, setAllPermissions] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
 
     const [assignRoleName, setAssignRoleName] = useState('');
     const [assignPermName, setAssignPermName] = useState('');
+
+    useEffect(() => {
+        Promise.all([api.getRoles(), api.getPermissions()])
+            .then(([r, p]) => {
+                setAllRoles(r.map((role: any) => role.name));
+                setAllPermissions(p.map((perm: any) => perm.name));
+            })
+            .catch(() => {
+                setAllRoles([]);
+                setAllPermissions([]);
+            });
+    }, []);
 
     const loadUser = async () => {
         if (!userId) return;
@@ -86,6 +100,7 @@ export default function UsersPage() {
 
                         <form onSubmit={handleAssignRole} className="flex gap-2 mb-4">
                             <input
+                                list="role-options"
                                 placeholder="Role Name"
                                 value={assignRoleName}
                                 onChange={e => setAssignRoleName(e.target.value)}
@@ -93,6 +108,11 @@ export default function UsersPage() {
                             />
                             <button className="btn btn-primary" type="submit">Assign</button>
                         </form>
+                        <datalist id="role-options">
+                            {allRoles.map((role) => (
+                                <option key={role} value={role} />
+                            ))}
+                        </datalist>
 
                         {roles.length === 0 ? <p className="text-muted">No roles assigned.</p> : (
                             <table style={{ border: 'none' }}>
@@ -116,6 +136,7 @@ export default function UsersPage() {
 
                         <form onSubmit={handleAssignPerm} className="flex gap-2 mb-4">
                             <input
+                                list="permission-options"
                                 placeholder="Permission Name"
                                 value={assignPermName}
                                 onChange={e => setAssignPermName(e.target.value)}
@@ -123,6 +144,11 @@ export default function UsersPage() {
                             />
                             <button className="btn btn-primary" type="submit">Assign</button>
                         </form>
+                        <datalist id="permission-options">
+                            {allPermissions.map((perm) => (
+                                <option key={perm} value={perm} />
+                            ))}
+                        </datalist>
 
                         {permissions.length === 0 ? <p className="text-muted">No direct permissions.</p> : (
                             <table style={{ border: 'none' }}>

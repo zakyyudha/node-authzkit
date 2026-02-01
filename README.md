@@ -250,7 +250,9 @@ You can easily mount the dashboard into your existing Express application.
     app.use('/authzkit', createDashboardRouter({
         authzkit, // Optional, defaults to singleton
         secret: 'supersecret', // Password for Basic Auth (User: admin)
-        username: 'admin' // Optional, defaults to 'admin'
+        username: 'admin', // Optional, defaults to 'admin'
+        jwtSecret: 'supersecret', // Optional, defaults to AUTHZKIT_DASHBOARD_JWT_SECRET or `secret`
+        jwtExpiresIn: '1h' // Optional, defaults to AUTHZKIT_DASHBOARD_JWT_EXPIRES_IN or '1h'
     }));
     
     app.listen(3000);
@@ -265,19 +267,31 @@ You can configure `node-authzkit` stores using environment variables.
 
 1.  **Set Environment Variables:**
     ```bash
-    # For MongoDB
-    AUTHZKIT_CONNECTION_TYPE=mongodb
+    # Connection (required when using loadConfigFromEnv)
+    AUTHZKIT_CONNECTION_TYPE=mongodb|postgres
     AUTHZKIT_CONNECTION_URI=mongodb://localhost:27017/mydb
     AUTHZKIT_DB_NAME=mydb
 
-    # For PostgreSQL
-    AUTHZKIT_CONNECTION_TYPE=postgres
-    AUTHZKIT_CONNECTION_URI=postgresql://user:pass@localhost:5432/mydb
+    # Optional model/collection overrides
+    AUTHZKIT_MODEL_USERS=users
+    AUTHZKIT_MODEL_ROLES=roles
+    AUTHZKIT_MODEL_PERMISSIONS=permissions
+    AUTHZKIT_MODEL_USER_ROLES=user_roles
+    AUTHZKIT_MODEL_USER_PERMISSIONS=user_permissions
 
-    # For Dashboard Auth (Optional override)
+    # Dashboard Basic Auth
     AUTHZKIT_DASHBOARD_USERNAME=adminuser
     AUTHZKIT_DASHBOARD_SECRET=mysecretpassword
+
+    # Dashboard API JWT
+    AUTHZKIT_DASHBOARD_JWT_SECRET=myjwtsecret
+    AUTHZKIT_DASHBOARD_JWT_EXPIRES_IN=1h
     ```
+
+    Notes:
+    - If `AUTHZKIT_CONNECTION_TYPE` is omitted but `AUTHZKIT_CONNECTION_URI` is set, the type is inferred from the URI prefix (`mongodb` or `postgres`).
+    - Dashboard JWT secret defaults to `AUTHZKIT_DASHBOARD_JWT_SECRET` or falls back to `AUTHZKIT_DASHBOARD_SECRET`.
+    - Dashboard JWT expiry defaults to `AUTHZKIT_DASHBOARD_JWT_EXPIRES_IN` or `1h`.
 
 2.  **Load Configuration:**
     ```typescript
@@ -297,6 +311,22 @@ You can configure `node-authzkit` stores using environment variables.
         }
     }
     ```
+
+### Dashboard API Authentication (JWT)
+
+The dashboard UI is protected with Basic Auth, while the API requires a short-lived JWT. The frontend requests a token from:
+
+```
+POST /authzkit/api/auth/token
+```
+
+Then it sends:
+
+```
+Authorization: Bearer <token>
+```
+
+You can also call the API directly if you first obtain a token (the token expires based on `AUTHZKIT_DASHBOARD_JWT_EXPIRES_IN`).
 
 ## API Documentation
 
@@ -319,6 +349,8 @@ The main singleton class.
 -   `getPermissions(): Promise<Permission[]>`
 -   `getUserRoles(authorizable: Authorizable): Promise<Set<string>>`
 -   `getUserPermissions(authorizable: Authorizable): Promise<Set<string>>`
+-   `addPermissionToRole(roleName: string, permissionName: string): Promise<Role>`
+-   `removePermissionFromRole(roleName: string, permissionName: string): Promise<Role>`
 
 ## License
 

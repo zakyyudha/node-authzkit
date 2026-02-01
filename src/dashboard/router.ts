@@ -7,6 +7,7 @@ import rolesRouter from './routes/roles';
 import permissionsRouter from './routes/permissions';
 import usersRouter from './routes/users';
 import { Authzkit } from '../classes/Authzkit';
+import jwt, { SignOptions } from 'jsonwebtoken';
 
 export interface DashboardOptions {
   /**
@@ -23,12 +24,28 @@ export interface DashboardOptions {
    * Usersname for Basic Auth. Defaults to 'admin'.
    */
   username?: string;
+  /**
+   * Secret used to sign JWTs for dashboard API access.
+   * If not provided, checks AUTHZKIT_DASHBOARD_JWT_SECRET env var, then falls back to `secret`.
+   */
+  jwtSecret?: string;
+  /**
+   * JWT expiry (e.g. "1h", "15m", "7d"). Defaults to AUTHZKIT_DASHBOARD_JWT_EXPIRES_IN or "1h".
+   */
+  jwtExpiresIn?: string;
 }
 
 export function createDashboardRouter(options: DashboardOptions = {}): Router {
   const router = Router();
   const username = options.username || process.env.AUTHZKIT_DASHBOARD_USERNAME || 'admin';
   const secret = options.secret || process.env.AUTHZKIT_DASHBOARD_SECRET;
+  const jwtSecret = options.jwtSecret || process.env.AUTHZKIT_DASHBOARD_JWT_SECRET || secret;
+  const jwtExpiresIn =
+    (options.jwtExpiresIn ||
+      process.env.AUTHZKIT_DASHBOARD_JWT_EXPIRES_IN ||
+      '1h') as SignOptions['expiresIn'];
+
+  router.use(express.json());
 
   // Trailing slash redirection for proper relative path resolution in frontend
   router.use((req, res, next) => {
@@ -38,8 +55,12 @@ export function createDashboardRouter(options: DashboardOptions = {}): Router {
     next();
   });
 
-  // Basic Authentication Middleware
+  // Basic Authentication Middleware (UI + token endpoint only)
   router.use((req, res, next) => {
+    const isApiRequest = req.path.startsWith('/api/');
+    const isTokenRequest = req.path === '/api/auth/token';
+    if (isApiRequest && !isTokenRequest) return next();
+
     if (!secret) {
       console.warn('Authzkit Dashboard: No secret provided. Dashboard is disabled.');
       return res.status(500).send('Dashboard configuration error: No secret provided.');
@@ -53,7 +74,36 @@ export function createDashboardRouter(options: DashboardOptions = {}): Router {
     next();
   });
 
+  router.post('/api/auth/token', (req, res) => {
+    if (!jwtSecret) {
+      return res.status(500).json({ error: 'JWT secret not configured.' });
+    }
+
+    const token = jwt.sign({ sub: username }, jwtSecret as string, { expiresIn: jwtExpiresIn });
+    res.json({ token, expiresIn: jwtExpiresIn });
+  });
+
+  const requireJwt = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    if (!jwtSecret) {
+      return res.status(500).json({ error: 'JWT secret not configured.' });
+    }
+
+    const authHeader = req.headers.authorization || '';
+    if (!authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing Authorization bearer token.' });
+    }
+
+    const token = authHeader.slice('Bearer '.length).trim();
+    try {
+      jwt.verify(token, jwtSecret as string);
+      next();
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid or expired token.' });
+    }
+  };
+
   // API Routes
+  router.use('/api', requireJwt);
   router.use('/api/roles', rolesRouter);
   router.use('/api/permissions', permissionsRouter);
   router.use('/api/users', usersRouter);
