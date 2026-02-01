@@ -1,24 +1,15 @@
-# IDEs and editors
-.idea
-
 # Dependencies
 node_modules
 .pnpm-store
 
-# Production build
-dist
-
-# VSCode
+# Editor/IDE
 .vscode
+.idea
 
 # Environment variables
 .env
 .env.local
 .env.*.local
-
-# Dashboard Web Artifacts
-src/dashboard/web/dist
-src/dashboard/web/node_modules
 
 # Logs
 npm-debug.log*
@@ -28,12 +19,12 @@ pnpm-debug.log*
 logs
 *.log
 
-# OS
-.DS_Store
-Thumbs.db
-
 # Test coverage
 coverage
 
-# TypeScript
+# TypeScript build artifacts
 *.tsbuildinfo
+
+# Source-only dashboard artifacts
+src/dashboard/web/node_modules
+src/dashboard/web/dist
