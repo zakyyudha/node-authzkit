@@ -1,6 +1,6 @@
 {
   "name": "@zakyyudha/node-authzkit",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A very simple Node.js authorization library",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
